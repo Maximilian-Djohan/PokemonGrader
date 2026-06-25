@@ -19,16 +19,46 @@ rigorously).
 > approximations. It is **not** affiliated with PSA and is not a substitute for
 > professional grading.
 
-## How it works
+## Two ways to run it
 
-- **Backend:** Python + Flask (`app.py`) exposes `POST /api/grade`.
-- **Vision:** OpenCV (`grader.py`) deskews the card, detects the outer boundary
-  and the inner artwork frame, measures the four border widths, and converts
-  those into centering ratios and sub-grades.
-- **Frontend:** A drag-and-drop single page (`templates/`, `static/`) that
-  previews the image and renders the grade report.
+This repo ships **two equivalent front ends** that share the same grading logic:
 
-## Running locally
+1. **Static site (no backend) — recommended for hosting.** `index.html` runs the
+   whole grading pipeline in the browser using [OpenCV.js](https://docs.opencv.org/4.10.0/opencv.js).
+   Nothing is uploaded to a server. This is what gets hosted on GitHub Pages.
+2. **Flask app (local).** `app.py` serves the same UI and grades server-side with
+   Python + OpenCV. Handy for local development.
+
+The browser engine (`static/grader.js`) is a faithful port of the Python engine
+(`grader.py`): deskew the card, detect the outer boundary and the inner artwork
+frame, measure the four border widths ("edge distances"), and convert those into
+centering ratios and sub-grades.
+
+## Hosting on GitHub Pages
+
+The site is fully static, so Pages can serve it directly. Pick **one** option:
+
+### Option A — Deploy from a branch (simplest)
+
+1. Push this repo to GitHub (already done if you're reading this there).
+2. Go to **Settings → Pages**.
+3. Under **Source**, choose **Deploy from a branch**.
+4. Select your branch and the **`/ (root)`** folder, then **Save**.
+5. After a minute your site is live at
+   `https://<your-username>.github.io/PokemonGrader/`.
+
+### Option B — GitHub Actions (auto-deploy on every push to `main`)
+
+1. Go to **Settings → Pages → Source** and choose **GitHub Actions**.
+2. The included workflow (`.github/workflows/deploy-pages.yml`) builds and
+   deploys automatically on each push to `main`. (You can also run it manually
+   from the **Actions** tab via "Run workflow", or add your branch to the
+   `on.push.branches` list to deploy from it.)
+
+> All asset paths are relative, so the site works correctly under the
+> `/PokemonGrader/` sub-path that Pages uses.
+
+## Running the Flask version locally
 
 ```bash
 python3 -m venv .venv
@@ -38,6 +68,13 @@ python app.py
 ```
 
 Then open <http://localhost:5000>.
+
+To preview the **static** site locally instead:
+
+```bash
+python3 -m http.server 8000
+# then open http://localhost:8000
+```
 
 ## Tips for the best read
 
@@ -49,10 +86,15 @@ Then open <http://localhost:5000>.
 ## Project layout
 
 ```
-app.py                 Flask server + upload/grade endpoint
-grader.py              OpenCV grading pipeline (centering, corners, edges, surface)
-templates/index.html   Upload + results UI
-static/style.css       Styling
-static/script.js       Upload, preview and result rendering
-requirements.txt       Python dependencies
+index.html                     Static site entry point (hosted on Pages)
+static/grader.js               In-browser grading engine (OpenCV.js)
+static/script.js               Upload, preview and result rendering
+static/style.css               Styling
+.github/workflows/deploy-pages.yml   Auto-deploy workflow for Pages
+.nojekyll                      Tell Pages to serve files as-is
+
+app.py                         Flask server + upload/grade endpoint (local)
+grader.py                      Python OpenCV grading pipeline (local)
+templates/index.html           UI template for the Flask version
+requirements.txt               Python dependencies (for the Flask version)
 ```

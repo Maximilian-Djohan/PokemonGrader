@@ -116,6 +116,20 @@ main {
 @keyframes spin { to { transform: rotate(360deg); } }
 #loading { text-align: center; }
 
+/* Engine status banner */
+.engine-status {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.small-spinner {
+  width: 18px; height: 18px;
+  border-width: 3px;
+  margin: 0;
+}
+
 /* Error */
 .card.error { border-color: var(--bad); color: #ffd7d4; }
 

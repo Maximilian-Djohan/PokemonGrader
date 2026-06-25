@@ -10,8 +10,18 @@
   const loading = document.getElementById("loading");
   const errorBox = document.getElementById("error");
   const results = document.getElementById("results");
+  const engineStatus = document.getElementById("engine-status");
 
   let selectedFile = null;
+  let engineReady = false;
+
+  // Hide the "loading engine" banner once OpenCV.js is ready.
+  if (window.PokemonGrader && window.PokemonGrader.ready) {
+    window.PokemonGrader.ready.then(() => {
+      engineReady = true;
+      if (engineStatus) hide(engineStatus);
+    });
+  }
 
   function show(el) { el.classList.remove("hidden"); }
   function hide(el) { el.classList.add("hidden"); }
@@ -78,7 +88,17 @@
 
   resetBtn.addEventListener("click", reset);
 
-  // --- Grading ---
+  // Load a File into an <img> element and resolve once it's decoded.
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Could not read that image."));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  // --- Grading (runs entirely in the browser via OpenCV.js) ---
   gradeBtn.addEventListener("click", async () => {
     if (!selectedFile) return;
     hide(uploader);
@@ -86,21 +106,17 @@
     hide(results);
     show(loading);
 
-    const form = new FormData();
-    form.append("image", selectedFile);
-
     try {
-      const res = await fetch("/api/grade", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) {
-        show(uploader);
-        showError(data.error || "Something went wrong.");
-        return;
-      }
+      // Make sure the OpenCV engine has finished loading.
+      await window.PokemonGrader.ready;
+      const img = await loadImage(selectedFile);
+      // Yield a frame so the spinner paints before the heavy sync work.
+      await new Promise((r) => setTimeout(r, 30));
+      const data = window.PokemonGrader.grade(img);
       renderResults(data);
     } catch (err) {
       show(uploader);
-      showError("Network error. Please try again.");
+      showError(err && err.message ? err.message : "Failed to analyze image.");
     } finally {
       hide(loading);
     }

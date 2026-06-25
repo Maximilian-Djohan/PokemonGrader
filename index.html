@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Grader</title>
+  <link rel="stylesheet" href="./static/style.css" />
+</head>
+<body>
+  <header class="hero">
+    <h1>Pokémon Card Grader</h1>
+    <p>Upload a clear, straight-on photo of a card front. We estimate a PSA-style
+       grade from centering (edge distance), corners, edges and surface —
+       100% in your browser, nothing is uploaded to a server.</p>
+  </header>
+
+  <main>
+    <section id="engine-status" class="card engine-status">
+      <span class="spinner small-spinner"></span>
+      <span>Loading grading engine (OpenCV)…</span>
+    </section>
+
+    <section id="uploader" class="card">
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <div class="dropzone-inner">
+          <div class="upload-icon">⬆️</div>
+          <p><strong>Drag &amp; drop</strong> a card image here</p>
+          <p class="muted">or</p>
+          <button type="button" id="browseBtn" class="btn">Browse files</button>
+          <p class="muted small">JPG, PNG, WEBP &middot; processed locally</p>
+        </div>
+      </div>
+
+      <div id="preview" class="preview hidden">
+        <img id="previewImg" alt="Card preview" />
+        <div class="preview-actions">
+          <button type="button" id="gradeBtn" class="btn primary">Grade this card</button>
+          <button type="button" id="resetBtn" class="btn ghost">Choose another</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="loading" class="card hidden">
+      <div class="spinner"></div>
+      <p>Analyzing card…</p>
+    </section>
+
+    <section id="error" class="card error hidden"></section>
+
+    <section id="results" class="card hidden">
+      <div class="grade-headline">
+        <div class="grade-badge">
+          <span id="overallGrade">–</span>
+        </div>
+        <div class="grade-meta">
+          <h2 id="gradeLabel">–</h2>
+          <p id="gradeNote" class="muted"></p>
+        </div>
+      </div>
+
+      <div class="subgrades">
+        <div class="subgrade" id="sg-centering">
+          <div class="sg-head"><span>Centering</span><span class="sg-grade"></span></div>
+          <div class="sg-detail"></div>
+          <div class="sg-extra"></div>
+        </div>
+        <div class="subgrade" id="sg-corners">
+          <div class="sg-head"><span>Corners</span><span class="sg-grade"></span></div>
+          <div class="sg-detail"></div>
+        </div>
+        <div class="subgrade" id="sg-edges">
+          <div class="sg-head"><span>Edges</span><span class="sg-grade"></span></div>
+          <div class="sg-detail"></div>
+        </div>
+        <div class="subgrade" id="sg-surface">
+          <div class="sg-head"><span>Surface</span><span class="sg-grade"></span></div>
+          <div class="sg-detail"></div>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        This is an automated estimate for fun and reference only. Centering is
+        measured from the image; corners, edges and surface are heuristic
+        estimates. It is not affiliated with or a substitute for PSA grading.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built for learning — grades are estimates, not official PSA assessments.</p>
+  </footer>
+
+  <!-- Normalise the various OpenCV.js init styles into one "opencv-loaded" event. -->
+  <script>
+    function onOpenCvReady() {
+      const signal = () => document.dispatchEvent(new Event("opencv-loaded"));
+      try {
+        if (typeof cv === "undefined") { signal(); return; }
+        if (cv instanceof Promise) {
+          cv.then((resolved) => { window.cv = resolved; signal(); });
+        } else if (cv.Mat) {
+          signal();
+        } else {
+          cv["onRuntimeInitialized"] = signal;
+        }
+      } catch (e) {
+        // Fall back to the poll in grader.js.
+      }
+    }
+  </script>
+  <script async src="https://docs.opencv.org/4.10.0/opencv.js" onload="onOpenCvReady()"></script>
+  <script src="./static/grader.js"></script>
+  <script src="./static/script.js"></script>
+</body>
+</html>

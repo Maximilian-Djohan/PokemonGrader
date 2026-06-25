@@ -17,7 +17,7 @@
 body {
   margin: 0;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  background: radial-gradient(1200px 600px at 50% -10%, var(--bg-soft), var(--bg));
+  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   display: flex;
@@ -33,10 +33,7 @@ body {
 .hero h1 {
   font-size: 2.4rem;
   margin: 0 0 .5rem;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
 }
 .hero p { color: var(--muted); line-height: 1.5; margin: 0; }
 
@@ -90,7 +87,7 @@ main {
   transition: transform .08s, background .2s;
 }
 .btn:hover { transform: translateY(-1px); }
-.btn.primary { background: linear-gradient(90deg, var(--accent), #ffd84d); color: #1a1a1a; }
+.btn.primary { background: var(--accent); color: #1a1a1a; }
 .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); }
 
 /* Preview */
@@ -141,7 +138,7 @@ main {
   border-radius: 50%;
   display: grid; place-items: center;
   font-size: 2.6rem; font-weight: 800;
-  background: conic-gradient(var(--accent), var(--accent-2));
+  background: var(--accent);
   color: #12152e;
   box-shadow: 0 8px 24px rgba(0,0,0,.4);
 }

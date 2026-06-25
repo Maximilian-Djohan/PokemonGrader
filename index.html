@@ -93,23 +93,35 @@
 
   <!-- Normalise the various OpenCV.js init styles into one "opencv-loaded" event. -->
   <script>
+    function signalCvReady() {
+      if (window.__cvReady) return;
+      if (window.cv && window.cv.Mat) {
+        window.__cvReady = true;
+        document.dispatchEvent(new Event("opencv-loaded"));
+      }
+    }
+    function signalCvError() {
+      document.dispatchEvent(new Event("opencv-error"));
+    }
+    // Called when the opencv.js <script> finishes downloading. The runtime may
+    // still be initialising; handle the Emscripten, Promise and ready styles.
     function onOpenCvReady() {
-      const signal = () => document.dispatchEvent(new Event("opencv-loaded"));
       try {
-        if (typeof cv === "undefined") { signal(); return; }
-        if (cv instanceof Promise) {
-          cv.then((resolved) => { window.cv = resolved; signal(); });
+        if (typeof cv === "undefined") { return; }
+        if (typeof cv.then === "function") {
+          cv.then((resolved) => { window.cv = resolved; signalCvReady(); });
         } else if (cv.Mat) {
-          signal();
+          signalCvReady();
         } else {
-          cv["onRuntimeInitialized"] = signal;
+          cv["onRuntimeInitialized"] = signalCvReady;
         }
       } catch (e) {
-        // Fall back to the poll in grader.js.
+        /* the poll in grader.js is the safety net */
       }
     }
   </script>
-  <script async src="https://docs.opencv.org/4.10.0/opencv.js" onload="onOpenCvReady()"></script>
+  <script async src="https://docs.opencv.org/4.x/opencv.js"
+          onload="onOpenCvReady()" onerror="signalCvError()"></script>
   <script src="./static/grader.js"></script>
   <script src="./static/script.js"></script>
 </body>

@@ -15,12 +15,21 @@
   let selectedFile = null;
   let engineReady = false;
 
-  // Hide the "loading engine" banner once OpenCV.js is ready.
+  // Hide the "loading engine" banner once OpenCV.js is ready; show a clear
+  // message if it fails or times out instead of spinning forever.
   if (window.PokemonGrader && window.PokemonGrader.ready) {
-    window.PokemonGrader.ready.then(() => {
-      engineReady = true;
-      if (engineStatus) hide(engineStatus);
-    });
+    window.PokemonGrader.ready.then(
+      () => {
+        engineReady = true;
+        if (engineStatus) hide(engineStatus);
+      },
+      (err) => {
+        if (engineStatus) {
+          engineStatus.classList.add("error");
+          engineStatus.innerHTML = "⚠️ " + (err && err.message ? err.message : "Failed to load the grading engine.");
+        }
+      }
+    );
   }
 
   function show(el) { el.classList.remove("hidden"); }
@@ -98,7 +107,24 @@
     });
   }
 
-  // --- Grading (runs entirely in the browser via OpenCV.js) ---
+  // Grade a file. Uses the in-browser OpenCV engine on the static site, and
+  // falls back to the Flask /api/grade endpoint when served by the Python app.
+  async function runGrade(file) {
+    if (window.PokemonGrader) {
+      await window.PokemonGrader.ready;
+      const img = await loadImage(file);
+      // Yield a frame so the spinner paints before the heavy sync work.
+      await new Promise((r) => setTimeout(r, 30));
+      return window.PokemonGrader.grade(img);
+    }
+    const form = new FormData();
+    form.append("image", file);
+    const res = await fetch("/api/grade", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong.");
+    return data;
+  }
+
   gradeBtn.addEventListener("click", async () => {
     if (!selectedFile) return;
     hide(uploader);
@@ -107,12 +133,7 @@
     show(loading);
 
     try {
-      // Make sure the OpenCV engine has finished loading.
-      await window.PokemonGrader.ready;
-      const img = await loadImage(selectedFile);
-      // Yield a frame so the spinner paints before the heavy sync work.
-      await new Promise((r) => setTimeout(r, 30));
-      const data = window.PokemonGrader.grade(img);
+      const data = await runGrade(selectedFile);
       renderResults(data);
     } catch (err) {
       show(uploader);

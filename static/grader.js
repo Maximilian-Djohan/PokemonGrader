@@ -12,18 +12,34 @@
  */
 (() => {
   // --- OpenCV.js readiness ------------------------------------------------
-  let resolveReady;
-  const ready = new Promise((res) => (resolveReady = res));
+  let resolveReady, rejectReady;
+  const ready = new Promise((res, rej) => { resolveReady = res; rejectReady = rej; });
+  let promiseHooked = false;
   function maybeResolve() {
-    if (window.cv && window.cv.Mat) { resolveReady(); return true; }
+    const c = window.cv;
+    if (!c) return false;
+    if (c.Mat) { resolveReady(); return true; }
+    // Promise-style builds expose `cv` as a thenable until it resolves.
+    if (typeof c.then === "function" && !promiseHooked) {
+      promiseHooked = true;
+      c.then((resolved) => { window.cv = resolved; });
+    }
     return false;
   }
   // index.html dispatches this once OpenCV's runtime is initialised.
   document.addEventListener("opencv-loaded", maybeResolve);
-  // Fallback poll in case the load event fired before this listener attached
-  // or used an init style we didn't catch.
+  document.addEventListener("opencv-error", () =>
+    rejectReady(new Error("Could not load the OpenCV engine (network or CDN blocked).")));
+  // Fallback poll: covers any init style and a load event that fired before
+  // this listener attached.
   const poll = setInterval(() => { if (maybeResolve()) clearInterval(poll); }, 150);
-  setTimeout(() => clearInterval(poll), 60000);
+  // Give up after 45s so the UI can show a clear message instead of hanging.
+  setTimeout(() => {
+    clearInterval(poll);
+    if (!(window.cv && window.cv.Mat)) {
+      rejectReady(new Error("The OpenCV engine took too long to load. Check your connection and refresh."));
+    }
+  }, 45000);
 
   // PSA front-centering tolerances: grade -> worst allowable larger-side %.
   const CENTERING_TOLERANCES = [
